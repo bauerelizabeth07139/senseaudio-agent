@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SenseAudio Agent · 多模态创作平台</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 12h2l2-7 4 14 3-10 2 5 2-2h3"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">SenseAudio</div>
+        <div class="logo-sub">Agent 创作平台</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <a class="nav-item active" data-page="chat">
+        <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        <span>对话助手</span>
+      </a>
+      <a class="nav-item" data-page="image">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>图片生成</span>
+      </a>
+      <a class="nav-item" data-page="video">
+        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3V9z"/></svg>
+        <span>视频生成</span>
+      </a>
+      <a class="nav-item" data-page="music">
+        <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <span>音乐创作</span>
+      </a>
+      <a class="nav-item" data-page="tts">
+        <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
+        <span>语音合成</span>
+      </a>
+      <a class="nav-item" data-page="sfx">
+        <svg viewBox="0 0 24 24"><path d="M2 10v4M6 6v12M10 3v18M14 8v8M18 5v14M22 10v4"/></svg>
+        <span>音效生成</span>
+      </a>
+      <a class="nav-item" data-page="usage">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>费用中心</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="spend-card">
+        <div class="spend-label">累计消耗</div>
+        <div class="spend-value">¥<span id="totalSpend">0.0000</span></div>
+        <div class="spend-sub"><span id="totalCalls">0</span> 次调用</div>
+      </div>
+      <div class="key-ok">
+        <span class="dot"></span> API Key 已在服务端配置
+      </div>
+    </div>
+  </aside>
+
+  <!-- 主区域 -->
+  <main class="main">
+    <!-- 对话助手 -->
+    <section class="page active" id="page-chat">
+      <header class="page-head">
+        <div><h1>对话助手</h1><p>多模态大语言模型，支持流式输出与 Function Calling</p></div>
+        <div class="head-actions">
+          <select id="chatModel" class="sel"></select>
+          <button class="btn ghost" id="chatClear">清空会话</button>
+        </div>
+      </header>
+      <div class="chat-wrap card">
+        <div class="chat-list" id="chatList">
+          <div class="chat-empty">
+            <div class="chat-empty-icon">💬</div>
+            <h3>开始与模型对话</h3>
+            <p>支持 senseaudio-s2 / flash / lite、DeepSeek、GLM、Kimi、Qwen 等模型</p>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <textarea id="chatInput" placeholder="输入消息，Enter 发送 / Shift+Enter 换行" rows="1"></textarea>
+          <button class="btn primary" id="chatSend">发送</button>
+        </div>
+        <div class="chat-pricing" id="chatPricing"></div>
+      </div>
+    </section>
+
+    <!-- 图片生成 -->
+    <section class="page" id="page-image">
+      <header class="page-head">
+        <div><h1>图片生成</h1><p>文生图 · 同步接口，输入参考图 URL 可图生图</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <label class="f-label">模型</label>
+          <select id="imgModel" class="sel"></select>
+          <div class="price-note" id="imgPriceNote"></div>
+          <div class="f-label-row"><label class="f-label">提示词 Prompt</label><button class="btn ghost sm ai-btn" data-ai="img">✨ AI 补全</button></div>
+          <textarea id="imgPrompt" class="ta" rows="5" placeholder="描述你想生成的画面（粗略想法即可，可点 AI 补全），例如：黄昏时分的赛博朋克城市街道"></textarea>
+          <div class="f-row">
+            <div class="f-col">
+              <label class="f-label">尺寸</label>
+              <select id="imgSize" class="sel"></select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">随机种子（可选）</label>
+              <input id="imgSeed" class="inp" type="number" placeholder="留空随机">
+            </div>
+          </div>
+          <label class="f-label">参考图 URL（可选，图生图）</label>
+          <input id="imgRef" class="inp" type="text" placeholder="https://...">
+          <button class="btn primary lg" id="imgGen">生成图片</button>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">生成结果 <span class="pill" id="imgCost"></span></div>
+          <div class="img-stage" id="imgStage">
+            <div class="empty-hint" id="imgEmpty">尚未生成</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 视频生成 -->
+    <section class="page" id="page-video">
+      <header class="page-head">
+        <div><h1>视频生成</h1><p>Doubao-Seedance-2.0 · 文生视频 / 图生视频（首帧）</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <div class="f-label-row"><label class="f-label">提示词 Prompt</label><button class="btn ghost sm ai-btn" data-ai="vid">✨ AI 补全</button></div>
+          <textarea id="vidPrompt" class="ta" rows="4" placeholder="描述画面与镜头运动（粗略想法即可，可点 AI 补全），例如：一只橘猫在窗台上伸懒腰"></textarea>
+          <label class="f-label">首帧图片 URL（可选，图生视频）</label>
+          <input id="vidFirstFrame" class="inp" type="text" placeholder="https://... (jpeg/png/webp等, ≥300px)">
+          <div class="f-row3">
+            <div class="f-col">
+              <label class="f-label">时长 <span class="hl" id="vidDurVal">5s</span></label>
+              <input id="vidDuration" type="range" min="4" max="15" step="1" value="5">
+            </div>
+            <div class="f-col">
+              <label class="f-label">分辨率</label>
+              <select id="vidResolution" class="sel"></select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">画面比例</label>
+              <select id="vidRatio" class="sel">
+                <option>16:9</option><option>9:16</option><option>4:3</option><option>3:4</option><option>1:1</option>
+              </select>
+            </div>
+          </div>
+          <div class="chk-row">
+            <label class="chk"><input type="checkbox" id="vidWatermark" checked> 添加水印</label>
+            <label class="chk"><input type="checkbox" id="vidAudio" checked> 生成音频</label>
+          </div>
+          <div class="price-note" id="vidPriceNote"></div>
+          <button class="btn primary lg" id="vidGen">创建视频任务</button>
+          <div class="progress hidden" id="vidProgress"><div class="progress-bar" id="vidProgressBar"></div></div>
+          <div class="task-status" id="vidStatus"></div>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">生成结果 <span class="pill" id="vidCost"></span></div>
+          <div class="video-stage" id="vidStage">
+            <div class="empty-hint">尚未生成</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 音乐创作 -->
+    <section class="page" id="page-music">
+      <header class="page-head">
+        <div><h1>音乐创作</h1><p>SenseAudio-Music-2.0 · 歌词生成 / 纯器乐 / 自定义歌词</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <div class="f-row">
+            <div class="f-col">
+              <label class="f-label">创作模式</label>
+              <select id="musMode" class="sel">
+                <option value="sing">歌曲（演唱）</option>
+                <option value="instrumental">纯器乐</option>
+                <option value="lyrics_to_instrumental">歌词转器乐</option>
+              </select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">人声</label>
+              <select id="musVocal" class="sel">
+                <option value="any">不限</option><option value="female">女声</option>
+                <option value="male">男声</option><option value="duet">对唱</option>
+              </select>
+            </div>
+          </div>
+          <div class="f-label-row"><label class="f-label">主题描述 Prompt</label><button class="btn ghost sm ai-btn" data-ai="mus">✨ AI 补全</button></div>
+          <textarea id="musPrompt" class="ta" rows="3" placeholder="描述歌曲主题（粗略想法即可，可点 AI 补全），例如：夏夜海边漫步"></textarea>
+          <label class="f-label">自定义歌词（可选，留空则由 AI 生成）</label>
+          <textarea id="musLyrics" class="ta" rows="5" placeholder="[Verse]&#10;晚风轻抚过海面...&#10;[Chorus]&#10;..."></textarea>
+          <div class="f-row">
+            <div class="f-col">
+              <label class="f-label">风格</label>
+              <input id="musStyle" class="inp" type="text" placeholder="民谣 / 流行 / 电子...">
+            </div>
+            <div class="f-col">
+              <label class="f-label">期望时长（秒，10-600）</label>
+              <input id="musDuration" class="inp" type="number" min="10" max="600" value="60">
+            </div>
+            <div class="f-col">
+              <label class="f-label">音频格式</label>
+              <select id="musFormat" class="sel"><option>mp3</option><option>wav</option><option>wav32</option></select>
+            </div>
+          </div>
+          <div class="price-note">¥0.5 / 首（原价 ¥1），按实际生成曲目数计费</div>
+          <button class="btn primary lg" id="musGen">开始创作</button>
+          <div class="task-status" id="musStatus"></div>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">生成结果 <span class="pill" id="musCost"></span></div>
+          <div class="music-list" id="musList"><div class="empty-hint">尚未生成</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 语音合成 -->
+    <section class="page" id="page-tts">
+      <header class="page-head">
+        <div><h1>语音合成 TTS</h1><p>情感语音 · 语速 / 音量 / 音调细粒度控制 · 支持 &lt;break&gt; 停顿</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <div class="f-row">
+            <div class="f-col">
+              <label class="f-label">模型</label>
+              <select id="ttsModel" class="sel">
+                <option value="sensenova-tts-2.0">SenseNova-TTS-2.0（推荐）</option>
+                <option value="senseaudio-tts-1.5-260319">SenseAudio-TTS-1.5</option>
+              </select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">音色 voice_id</label>
+              <div class="voice-row">
+                <input id="ttsVoice" class="inp" list="voiceList" value="female_0033_b" placeholder="voice_id">
+                <datalist id="voiceList"></datalist>
+                <button class="btn ghost sm" id="ttsLoadVoices">获取音色</button>
+              </div>
+              <div class="f-hint" id="ttsVoiceInfo">点击「获取音色」加载系统音色列表</div>
+            </div>
+          </div>
+          <div class="f-label-row"><label class="f-label">合成文本 <span class="hl" id="ttsCharCount">0 字符</span></label><button class="btn ghost sm ai-btn" data-ai="tts">✨ AI 补全</button></div>
+          <textarea id="ttsText" class="ta" rows="6" placeholder="输入要合成的文本（粗略想法即可，可点 AI 补全），支持 <break time="500"/> 停顿标记">你好，欢迎使用 SenseAudio 智能语音合成平台！</textarea>
+          <div class="f-row3">
+            <div class="f-col">
+              <label class="f-label">语速 <span class="hl" id="ttsSpeedVal">1.0</span></label>
+              <input id="ttsSpeed" type="range" min="0.5" max="2" step="0.05" value="1">
+            </div>
+            <div class="f-col">
+              <label class="f-label">音量 <span class="hl" id="ttsVolVal">1.0</span></label>
+              <input id="ttsVol" type="range" min="0.01" max="10" step="0.01" value="1">
+            </div>
+            <div class="f-col">
+              <label class="f-label">音调 <span class="hl" id="ttsPitchVal">0</span></label>
+              <input id="ttsPitch" type="range" min="-12" max="12" step="1" value="0">
+            </div>
+          </div>
+          <div class="f-row">
+            <div class="f-col">
+              <label class="f-label">格式</label>
+              <select id="ttsFormat" class="sel"><option>mp3</option><option>wav</option><option>flac</option><option>pcm</option></select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">采样率</label>
+              <select id="ttsSampleRate" class="sel">
+                <option>32000</option><option>8000</option><option>16000</option><option>22050</option><option>24000</option><option>44100</option>
+              </select>
+            </div>
+          </div>
+          <div class="price-note" id="ttsPriceNote">中文 ¥3.5 / 万字符 · 其他 ¥1.75 / 万字符</div>
+          <button class="btn primary lg" id="ttsGen">开始合成</button>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">合成结果 <span class="pill" id="ttsCost"></span></div>
+          <div class="tts-stage" id="ttsStage"><div class="empty-hint">尚未合成</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 音效生成 -->
+    <section class="page" id="page-sfx">
+      <header class="page-head">
+        <div><h1>音效生成</h1><p>SenseAudio-Sound-Effect-1.0 · 一次生成 1-4 个变体，仅对成功变体计费</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <div class="f-label-row"><label class="f-label">音效描述</label><button class="btn ghost sm ai-btn" data-ai="sfx">✨ AI 补全</button></div>
+          <textarea id="sfxText" class="ta" rows="4" placeholder="描述想要的音效（粗略想法即可，可点 AI 补全），例如：雷雨夜的闪电劈中大树"></textarea>
+          <div class="f-row3">
+            <div class="f-col">
+              <label class="f-label">变体数量</label>
+              <select id="sfxVariants" class="sel"><option>4</option><option>1</option><option>2</option><option>3</option></select>
+            </div>
+            <div class="f-col">
+              <label class="f-label">固定时长（秒，可选 1-10）</label>
+              <input id="sfxDuration" class="inp" type="number" min="1" max="10" placeholder="智能时长">
+            </div>
+            <div class="f-col">
+              <label class="f-label">格式</label>
+              <select id="sfxFormat" class="sel"><option>mp3</option><option>wav</option></select>
+            </div>
+          </div>
+          <div class="price-note">¥0.08 / 组（最多 4 个变体）</div>
+          <button class="btn primary lg" id="sfxGen">生成音效</button>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">生成结果 <span class="pill" id="sfxCost"></span></div>
+          <div class="sfx-list" id="sfxList"><div class="empty-hint">尚未生成</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 费用中心 -->
+    <section class="page" id="page-usage">
+      <header class="page-head">
+        <div><h1>费用中心</h1><p>按官方计价规则自动估算每一次调用的消耗（优惠后价格）</p></div>
+        <div class="head-actions">
+          <button class="btn ghost" id="usageRefresh">刷新</button>
+        </div>
+      </header>
+      <div class="usage-cards" id="usageCards"></div>
+      <div class="card table-card">
+        <div class="result-head">调用明细</div>
+        <table class="table">
+          <thead><tr><th>时间</th><th>模块</th><th>模型</th><th>说明</th><th>费用</th></tr></thead>
+          <tbody id="usageTbody"></tbody>
+        </table>
+      </div>
+      <div class="card table-card">
+        <div class="result-head">官方计价速查</div>
+        <table class="table">
+          <thead><tr><th>能力</th><th>模型</th><th>优惠价</th><th>原价</th></tr></thead>
+          <tbody>
+            <tr><td>对话 LLM</td><td>senseaudio-s2</td><td>¥5 / ¥30 每百万 tokens（入/出）</td><td>¥15 / ¥90</td></tr>
+            <tr><td>对话 LLM</td><td>senseaudio-s2-flash</td><td>¥2 / ¥12 每百万 tokens</td><td>¥4 / ¥24</td></tr>
+            <tr><td>对话 LLM</td><td>senseaudio-s2-lite</td><td>¥1 / ¥6 每百万 tokens</td><td>¥2 / ¥12</td></tr>
+            <tr><td>图片</td><td>senseaudio-image-2.0</td><td>¥0.5 / 张</td><td>¥1 / 张</td></tr>
+            <tr><td>图片</td><td>doubao-seedream-5.0-lite</td><td>¥0.22 / 张</td><td>¥0.5 / 张</td></tr>
+            <tr><td>视频</td><td>doubao-seedance-2.0 · 480p</td><td>¥0.5 / 秒</td><td>¥1 / 秒</td></tr>
+            <tr><td>视频</td><td>doubao-seedance-2.0 · 720p</td><td>¥1 / 秒</td><td>¥2 / 秒</td></tr>
+            <tr><td>视频</td><td>doubao-seedance-2.0 · 1080p</td><td>¥3.1 / 秒</td><td>¥6.2 / 秒</td></tr>
+            <tr><td>音乐</td><td>senseaudio-music-2.0</td><td>¥0.5 / 首</td><td>¥1 / 首</td></tr>
+            <tr><td>语音合成</td><td>TTS 1.5 / 2.0</td><td>中文 ¥3.5 / 万字符 · 其他 ¥1.75</td><td>同</td></tr>
+            <tr><td>音效</td><td>senseaudio-sfx-1.0</td><td>¥0.08 / 组</td><td>同</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="/app.js"></script>
+</body>
+</html>
