@@ -10,6 +10,7 @@
 import json
 import os
 import re
+import sys
 import threading
 import time
 import urllib.error
@@ -17,8 +18,25 @@ import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(BASE_DIR, "public")
+
+def _app_dir():
+    """配置与账本所在目录：打包成 exe 时取 exe 同级目录，脚本运行时取脚本目录。"""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def _resource_dir():
+    """打包内置资源（public/）所在目录：PyInstaller onefile 解压到 sys._MEIPASS。"""
+    if getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", None):
+        bundled = os.path.join(sys._MEIPASS, "public")
+        if os.path.isdir(bundled):
+            return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+BASE_DIR = _app_dir()
+PUBLIC_DIR = os.path.join(_resource_dir(), "public")
 USAGE_FILE = os.path.join(BASE_DIR, "usage.json")
 
 with open(os.path.join(BASE_DIR, "config.json"), encoding="utf-8") as _f:
@@ -403,7 +421,12 @@ def main():
     port = int(os.environ.get("PORT", "8790"))
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.daemon_threads = True
-    print("SenseAudio Agent running at http://127.0.0.1:%d" % port)
+    url = "http://127.0.0.1:%d" % port
+    print("SenseAudio Agent running at %s" % url)
+    print("Config: %s (config.json) | Usage ledger: %s" % (BASE_DIR, USAGE_FILE))
+    if getattr(sys, "frozen", False):
+        import webbrowser
+        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     try:
         server.serve_forever()
     except KeyboardInterrupt:
