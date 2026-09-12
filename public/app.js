@@ -546,5 +546,71 @@ async function aiComplete(kind, btn) {
   }
 }
 
+/* ================= 设置页 ================= */
+function activatePage(name) {
+  document.querySelectorAll(".nav-item").forEach((n) => n.classList.toggle("active", n.dataset.page === name));
+  document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+  $("page-" + name).classList.add("active");
+}
+async function loadConfigStatus() {
+  try {
+    const r = await fetch("/api/config");
+    const c = await r.json();
+    updateKeyStatus(c);
+    return c;
+  } catch (e) { return null; }
+}
+function updateKeyStatus(c) {
+  const ok = !!(c && c.configured);
+  $("keyStatusText").textContent = ok ? "API Key 已配置（" + c.key_masked + "）" : "未配置 API Key";
+  const dot = $("keyStatusDot");
+  dot.style.background = ok ? "var(--green)" : "var(--red)";
+  dot.style.boxShadow = "0 0 8px " + (ok ? "var(--green)" : "var(--red)");
+  $("keyStatusLine").style.color = ok ? "var(--green)" : "var(--red)";
+  $("setBadge").textContent = ok ? "已配置" : "未配置";
+  $("setInfo").innerHTML = ok
+    ? '<div><span class="k">Key</span><span class="mono">' + c.key_masked + '</span></div><div><span class="k">API 地址</span><span class="mono">' + c.api_base + '</span></div>'
+    : '<div style="color:var(--text-dim)">尚未配置，在左侧填入 Key 并保存即可</div>';
+  $("setBase").value = (c && c.api_base) || "https://api.senseaudio.cn";
+  $("noKeyBanner").classList.toggle("hidden", ok);
+}
+$("setSave").addEventListener("click", async () => {
+  const key = $("setKey").value.trim();
+  const base = $("setBase").value.trim();
+  if (!key) return toast("请输入 API Key", "err");
+  const btn = $("setSave"); btn.disabled = true; btn.textContent = "验证中…";
+  $("setStatus").textContent = "正在验证 Key（请求 /v1/models）…"; $("setStatus").className = "task-status";
+  try {
+    const r = await fetch("/api/config", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ api_key: key, api_base: base }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || JSON.stringify(d));
+    $("setStatus").textContent = "✅ Key 已验证并保存（可用模型 " + d.models + " 个），已立即生效"; $("setStatus").className = "task-status ok";
+    $("setKey").value = "";
+    toast("API Key 已保存并生效", "ok");
+    updateKeyStatus(d);
+  } catch (e) {
+    $("setStatus").textContent = "❌ " + e.message; $("setStatus").className = "task-status err";
+    toast("保存失败：" + e.message, "err");
+  } finally { btn.disabled = false; btn.textContent = "验证并保存"; }
+});
+$("setTest").addEventListener("click", async () => {
+  const btn = $("setTest"); btn.disabled = true; btn.textContent = "测试中…";
+  $("setStatus").textContent = "正在测试连接…"; $("setStatus").className = "task-status";
+  try {
+    const c = await loadConfigStatus();
+    if (!c || !c.configured) throw new Error("尚未配置 Key");
+    const r = await fetch("/api/proxy/v1/models");
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "HTTP " + r.status);
+    $("setStatus").textContent = "✅ 连接正常，可用模型 " + (d.data || []).length + " 个（" + c.api_base + "）"; $("setStatus").className = "task-status ok";
+  } catch (e) {
+    $("setStatus").textContent = "❌ " + e.message; $("setStatus").className = "task-status err";
+  } finally { btn.disabled = false; btn.textContent = "测试当前连接"; }
+});
+$("goSettings").addEventListener("click", (e) => { e.preventDefault(); activatePage("settings"); });
+
 /* ================= 启动 ================= */
+loadConfigStatus().then((c) => {
+  if (!c || !c.configured) activatePage("settings");  // 未配置时自动进入设置页
+});
 refreshUsage();

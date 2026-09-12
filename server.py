@@ -39,10 +39,38 @@ BASE_DIR = _app_dir()
 PUBLIC_DIR = os.path.join(_resource_dir(), "public")
 USAGE_FILE = os.path.join(BASE_DIR, "usage.json")
 
-with open(os.path.join(BASE_DIR, "config.json"), encoding="utf-8") as _f:
-    _CONFIG = json.load(_f)
-API_BASE = _CONFIG["api_base"].rstrip("/")
-API_KEY = _CONFIG["api_key"]
+_API_BASE = "https://api.senseaudio.cn"
+_API_KEY = ""
+try:
+    with open(os.path.join(BASE_DIR, "config.json"), encoding="utf-8") as _f:
+        _CONFIG = json.load(_f)
+    _API_BASE = (_CONFIG.get("api_base") or _API_BASE).rstrip("/")
+    _API_KEY = _CONFIG.get("api_key") or ""
+except FileNotFoundError:
+    pass  # 未配置时也允许启动，由前端设置页引导配置
+API_BASE = _API_BASE
+API_KEY = _API_KEY
+
+
+def save_config(api_key, api_base):
+    """写入 config.json 并热更新内存中的 key。"""
+    global API_BASE, API_KEY
+    cfg = {"api_base": (api_base or "https://api.senseaudio.cn").rstrip("/"), "api_key": api_key or ""}
+    with open(os.path.join(BASE_DIR, "config.json"), "w", encoding="utf-8") as f:
+        json.dump(cfg, f, ensure_ascii=False, indent=2)
+    API_BASE = cfg["api_base"]
+    API_KEY = cfg["api_key"]
+    return cfg
+
+
+def key_status():
+    if not API_KEY:
+        return {"configured": False, "api_base": API_BASE, "key_masked": ""}
+    return {
+        "configured": True,
+        "api_base": API_BASE,
+        "key_masked": (API_KEY[:6] + "..." + API_KEY[-4:]) if len(API_KEY) > 12 else "***",
+    }
 
 _LOCK = threading.Lock()
 
@@ -257,6 +285,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/usage"):
             self._send_json(200, usage_summary())
             return
+        if path.startswith("/api/config"):
+            self._send_json(200, key_status())
+            return
         if path.startswith("/api/proxy/"):
             self._proxy_get(path[len("/api/proxy/"):], parsed.query)
             return
@@ -265,13 +296,55 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path.startswith("/api/config"):
+            self._save_config_route()
+            return
         if path.startswith("/api/proxy/"):
             self._proxy_post(path[len("/api/proxy/"):])
             return
         self._send_json(404, {"error": "not found"})
 
+    # ---- config
+    def _save_config_route(self):
+        body = self._read_body() or {}
+        api_key = (body.get("api_key") or "").strip()
+        api_base = (body.get("api_base") or "https://api.senseaudio.cn").strip()
+        if not api_key:
+            self._send_json(400, {"error": "API Key 不能为空"})
+            return
+        ok, models, msg = self._verify_key(api_key, api_base)
+        if not ok:
+            self._send_json(400, {"error": "Key 验证失败：" + msg, "verified": False})
+            return
+        save_config(api_key, api_base)
+        self._send_json(200, {"saved": True, "verified": True, "models": models, **key_status()})
+
+    def _verify_key(self, key, base):
+        """用 GET /v1/models 验证 key 是否有效。"""
+        url = (base or API_BASE).rstrip("/") + "/v1/models"
+        req = urllib.request.Request(url, method="GET", headers={
+            "Authorization": "Bearer " + key,
+            "Accept": "application/json",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            models = len((data.get("data") or []))
+            return True, models, "ok"
+        except urllib.error.HTTPError as e:
+            try:
+                obj = json.loads(e.read().decode("utf-8", "ignore"))
+                return False, 0, obj.get("message") or ("HTTP %s" % e.code)
+            except Exception:
+                return False, 0, "HTTP %s" % e.code
+        except Exception as e:
+            return False, 0, str(e)
+
     # ---- proxy
     def _proxy_get(self, sub, query):
+        if not API_KEY:
+            self._send_json(401, {"error": "尚未配置 API Key，请先到「设置」页配置", "need_config": True})
+            return
         url = API_BASE + "/" + sub + (("?" + query) if query else "")
         req = urllib.request.Request(url, method="GET", headers={
             "Authorization": "Bearer " + API_KEY,
@@ -320,6 +393,9 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json(e.code, obj)
 
     def _proxy_post(self, sub):
+        if not API_KEY:
+            self._send_json(401, {"error": "尚未配置 API Key，请先到「设置」页配置", "need_config": True})
+            return
         body = self._read_body()
         payload = json.dumps(body, ensure_ascii=False).encode("utf-8") if body is not None else b""
         url = API_BASE + "/" + sub

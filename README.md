@@ -23,10 +23,18 @@
 
 ## 快速开始
 
+### 方式一：下载 exe（推荐）
+
+从 [Releases](https://github.com/bauerelizabeth07139/senseaudio-agent/releases) 下载 `SenseAudio-Agent-win64.zip` 并解压，双击 `SenseAudio-Agent.exe`，程序会自动打开浏览器。
+
+- **没配置过 key 也不会闪退**：应用会自动进入「设置」页，粘贴 API Key（sk- 开头）→ 点「验证并保存」，验证通过立即生效
+- 也可以手动把 `config.example.json` 复制为 `config.json`（与 exe 同目录）填入 key
+
+### 方式二：源码运行
+
 ```bash
-# 1. 复制配置文件并填入你的 SenseAudio API Key
+# 1. 复制配置文件并填入你的 SenseAudio API Key（或者不填，启动后到界面「设置」页配置）
 cp config.example.json config.json
-# 编辑 config.json，填入 sk- 开头的 key
 
 # 2. 启动（纯 Python 标准库，无需安装依赖）
 python server.py
@@ -34,6 +42,14 @@ python server.py
 # 3. 浏览器打开
 # http://127.0.0.1:8790
 ```
+
+## 设置页
+
+侧边栏「设置」页可随时更换 API Key / API 地址：
+
+- 保存前自动调用 `GET /v1/models` 验证 Key 有效性，无效 Key 不会被保存
+- 保存后热更新立即生效，无需重启
+- 页面只显示掩码（如 `sk-zS7...21E3`），不回传明文
 
 ## 项目结构
 

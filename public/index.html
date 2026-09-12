@@ -50,6 +50,10 @@
         <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         <span>费用中心</span>
       </a>
+      <a class="nav-item" data-page="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>设置</span>
+      </a>
     </nav>
     <div class="sidebar-foot">
       <div class="spend-card">
@@ -57,9 +61,7 @@
         <div class="spend-value">¥<span id="totalSpend">0.0000</span></div>
         <div class="spend-sub"><span id="totalCalls">0</span> 次调用</div>
       </div>
-      <div class="key-ok">
-        <span class="dot"></span> API Key 已在服务端配置
-      </div>
+      <div class="key-ok" id="keyStatusLine"><span class="dot" id="keyStatusDot"></span><span id="keyStatusText">检查配置中…</span></div>
     </div>
   </aside>
 
@@ -319,6 +321,31 @@
       </div>
     </section>
 
+    <!-- 设置 -->
+    <section class="page" id="page-settings">
+      <header class="page-head">
+        <div><h1>设置</h1><p>API Key 在此配置一次，全应用生效。Key 保存在本地 config.json，不会上传</p></div>
+      </header>
+      <div class="grid-2">
+        <div class="card form-card">
+          <label class="f-label">SenseAudio API Key</label>
+          <input id="setKey" class="inp" type="password" placeholder="sk-... （填入后保存）" autocomplete="off">
+          <label class="f-label">API 地址</label>
+          <input id="setBase" class="inp" type="text" value="https://api.senseaudio.cn">
+          <div class="chk-row">
+            <button class="btn primary" id="setSave">验证并保存</button>
+            <button class="btn ghost" id="setTest">测试当前连接</button>
+          </div>
+          <div class="task-status" id="setStatus"></div>
+        </div>
+        <div class="card result-card">
+          <div class="result-head">当前配置 <span class="pill" id="setBadge"></span></div>
+          <div class="config-info" id="setInfo"></div>
+          <div class="f-hint" style="margin-top:14px">说明：<br>· 保存前会用 GET /v1/models 验证 Key 有效性，无效的 Key 不会被保存<br>· 保存后立即生效，无需重启<br>· Key 仅保存在本机 config.json（与程序同目录），前端不存储明文</div>
+        </div>
+      </div>
+    </section>
+
     <!-- 费用中心 -->
     <section class="page" id="page-usage">
       <header class="page-head">
@@ -358,6 +385,9 @@
   </main>
 </div>
 
+<div class="banner hidden" id="noKeyBanner">
+  ⚠️ 尚未配置 API Key，生成功能不可用 —— <a href="#" id="goSettings">前往设置</a>
+</div>
 <div class="toast-wrap" id="toastWrap"></div>
 <script src="/app.js"></script>
 </body>
